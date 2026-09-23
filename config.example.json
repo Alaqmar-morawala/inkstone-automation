@@ -1,0 +1,20 @@
+{
+  "active_account": "acc1",
+  "accounts": {
+    "acc1": {
+      "username": "YourUsername",
+      "ssouid": "123456789",
+      "uaa_token": "eyJ...",
+      "api_key": "sk-...",
+      "acw_tc": "..."
+    }
+  },
+  "uaa_token": "eyJ...",
+  "ssouid": "123456789",
+  "api_key": "sk-...",
+  "acw_tc": "...",
+  "discovery_url": "https://discovery.intern-ai.org.cn",
+  "api_base_url": "https://discovery-api.intern-ai.org.cn/v1",
+  "anthropic_base_url": "https://discovery-api.intern-ai.org.cn",
+  "default_model": "qwen3.8-27b"
+}

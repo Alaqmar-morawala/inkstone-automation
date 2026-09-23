@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inkstone-auto"
+version = "0.1.0"
+description = "Intern InkStone Automation Suite & SDK"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "httpx>=0.28.0",
+]
+
+[project.scripts]
+inkstone = "inkstone.cli:main"
