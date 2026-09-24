@@ -413,6 +413,12 @@ def cmd_serve(client: InkStoneClient, args: argparse.Namespace) -> None:
     start_server(host=args.host, port=args.port, with_tunnel=not args.no_tunnel)
 
 
+def cmd_proxy(client: InkStoneClient, args: argparse.Namespace) -> None:
+    from .proxy import serve
+    serve(host=args.host, port=args.port, proxy_key=args.proxy_key or "",
+          accounts=args.accounts.split(",") if args.accounts else None)
+
+
 def cmd_deploy(client: InkStoneClient, args: argparse.Namespace) -> None:
     recipe_name = args.recipe or "qwen3.8-uncensored"
     if recipe_name not in SUPPORTED_RECIPES:
@@ -526,6 +532,14 @@ def main() -> None:
     p_srv.add_argument("--host", default="0.0.0.0", help="Host binding (default: 0.0.0.0)")
     p_srv.add_argument("--no-tunnel", action="store_true", help="Disable public Cloudflare tunnel")
     p_srv.set_defaults(func=cmd_serve)
+
+    # proxy
+    p_proxy = subparsers.add_parser("proxy", help="Multi-account token proxy for harnesses (OpenAI + Anthropic protocols)")
+    p_proxy.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1)")
+    p_proxy.add_argument("--port", "-p", type=int, default=8787, help="Port to listen on (default: 8787)")
+    p_proxy.add_argument("--proxy-key", default="", help="Optional key harnesses must send as Bearer token")
+    p_proxy.add_argument("--accounts", default="", help="Comma-separated account names to pool (default: all)")
+    p_proxy.set_defaults(func=cmd_proxy)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

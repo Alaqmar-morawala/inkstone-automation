@@ -164,6 +164,45 @@ client.compute.stop_machine(machine_id)
 
 ---
 
+## Multi-Account Token Proxy (for ZCode & other harnesses)
+
+`inkstone proxy` runs a local gateway that pools **all accounts' 200M-token quotas** and routes each request to the account with the most remaining 5h-window credit, dodging the per-account rate limits (50 req/min, 2M tok/min) and the 5h/7d sliding windows.
+
+```bash
+inkstone proxy --port 8799                 # all accounts, no auth (localhost only)
+inkstone proxy --proxy-key mysecret        # harnesses must send Bearer mysecret
+inkstone proxy --accounts acc1,acc2        # pool a subset
+```
+
+Endpoints:
+
+| Endpoint | Protocol |
+|---|---|
+| `POST /v1/chat/completions` | OpenAI (streaming supported) |
+| `POST /v1/messages` | Anthropic (streaming supported) |
+| `GET /v1/models` | Model catalog |
+| `GET /quota` | Live per-account balances, RPM/TPM, routing counters |
+
+Every response carries an `x-inkstone-account` header telling you which account served it.
+
+**Connect ZCode (OpenAI protocol):**
+
+```bash
+export OPENAI_BASE_URL=http://127.0.0.1:8799/v1
+export OPENAI_API_KEY=anything          # or your --proxy-key
+```
+
+**Connect ZCode (Anthropic protocol):**
+
+```bash
+export ANTHROPIC_BASE_URL=http://127.0.0.1:8799
+export ANTHROPIC_AUTH_TOKEN=anything    # or your --proxy-key
+```
+
+Routing policy: skip accounts in cooldown (auto-triggered by upstream 429/5xx, 60s), stay under local RPM/TPM windows, then pick the account with the most remaining 5h credit. Accounts whose management token expired (balance unknown) still participate via their API key. Failover to the next-best account is transparent.
+
+---
+
 ## Point Cost & Rate Reference
 
 * **TokenPlan Base Unit**: 1 墨点 (Ink Point) ≈ 20,000,000 tokens
