@@ -26,6 +26,8 @@ class InferenceClient:
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
         system_prompt: Optional[str] = None,
+        reasoning_effort: Optional[str] = None,
+        thinking_budget: Optional[int] = None,
         **kwargs: Any,
     ) -> Union[Dict[str, Any], Generator[str, None, None]]:
         """Send a chat completion request using the OpenAI-compatible endpoint."""
@@ -50,6 +52,10 @@ class InferenceClient:
         }
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
+        if reasoning_effort is not None:
+            payload["reasoning_effort"] = reasoning_effort
+        if thinking_budget is not None:
+            payload["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
 
         url = f"{self.config.api_base_url}/chat/completions"
         headers = self.auth.get_inference_headers(protocol="openai")

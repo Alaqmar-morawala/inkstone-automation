@@ -138,20 +138,40 @@ def cmd_chat(client: InkStoneClient, args: argparse.Namespace) -> None:
         print_error("Prompt is required.")
         sys.exit(1)
 
+    effort = getattr(args, "effort", None)
+    budget = getattr(args, "budget", None)
+
     if args.stream:
         print(f"\033[1;34m[{model}]\033[0m ", end="", flush=True)
-        generator = client.chat(prompt, model=model, stream=True, temperature=args.temperature, max_tokens=args.max_tokens)
+        generator = client.chat(
+            prompt,
+            model=model,
+            stream=True,
+            temperature=args.temperature,
+            max_tokens=args.max_tokens,
+            reasoning_effort=effort,
+            thinking_budget=budget,
+        )
         for chunk in generator:
             print(chunk, end="", flush=True)
         print()
     else:
-        res = client.chat(prompt, model=model, stream=False, temperature=args.temperature, max_tokens=args.max_tokens)
+        res = client.chat(
+            prompt,
+            model=model,
+            stream=False,
+            temperature=args.temperature,
+            max_tokens=args.max_tokens,
+            reasoning_effort=effort,
+            thinking_budget=budget,
+        )
         if res.get("reasoning_content"):
             print(f"\033[2m[Thinking]: {res['reasoning_content'].strip()}\033[0m\n")
         print(f"\033[1;34m[{model}]\033[0m {res.get('content', '')}")
         usage = res.get("usage", {})
         if usage:
-            print(f"\n\033[2mTokens: {usage.get('total_tokens', 0)} (prompt: {usage.get('prompt_tokens', 0)}, completion: {usage.get('completion_tokens', 0)})\033[0m")
+            r_tok = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
+            print(f"\n\033[2mTokens: {usage.get('total_tokens', 0)} (prompt: {usage.get('prompt_tokens', 0)}, completion: {usage.get('completion_tokens', 0)}, reasoning: {r_tok})\033[0m")
 
 
 def cmd_keys(client: InkStoneClient, args: argparse.Namespace) -> None:
@@ -361,6 +381,8 @@ def main() -> None:
     p_chat.add_argument("--stream", "-s", action="store_true", help="Stream response tokens")
     p_chat.add_argument("--temperature", "-t", type=float, default=0.7, help="Sampling temperature")
     p_chat.add_argument("--max-tokens", type=int, default=None, help="Max tokens")
+    p_chat.add_argument("--effort", "-e", choices=["low", "medium", "high"], help="Reasoning effort level (low=instant/no thinking, medium, high)")
+    p_chat.add_argument("--budget", "-b", type=int, help="Thinking token budget limit (e.g. 512, 2048, 4096)")
     p_chat.set_defaults(func=cmd_chat)
 
     # keys
