@@ -211,6 +211,81 @@ def cmd_keys(client: InkStoneClient, args: argparse.Namespace) -> None:
             print_error(f"Failed to delete key {args.key_id}.")
 
 
+def cmd_images(client: InkStoneClient, args: argparse.Namespace) -> None:
+    action = args.image_action
+
+    if action == "list" or not action:
+        result = client.images.list_images()
+        images = result.get("list", [])
+        print_header(f"Custom Images ({len(images)})")
+        if not images:
+            print("  No custom images. Use the platform UI or API to create one.")
+            return
+        print(f"  \033[1m{'ID':<6} {'NAME':<25} {'STATUS':<12} {'BASE IMAGE':<30} {'BUILT'}\033[0m")
+        print("  " + "-" * 90)
+        for img in images:
+            status = img.get("building_status", "unknown")
+            color = {"success": "\033[32m", "building": "\033[33m", "pending": "\033[34m", "failed": "\033[31m"}.get(status, "")
+            reset = "\033[0m" if color else ""
+            print(f"  {str(img.get('id', '')):<6} {img.get('name', ''):<25} {color}{status:<12}{reset} {img.get('basic_mirror', ''):<30} {img.get('build_time', '')}")
+
+    elif action == "bases":
+        bases = client.images.list_base_images()
+        print_header(f"Official Base Images ({len(bases)})")
+        for b in bases:
+            print(f"  [{b['id']}] {b['mirror_name']} ({b['model_type']})")
+            print(f"      Registry: {b['mirror_url']}")
+
+    elif action == "limit":
+        limit = client.images.get_limit()
+        result = client.images.list_images()
+        used = len(result.get("list", []))
+        print_info("Max custom images", str(limit))
+        print_info("Currently used", str(used))
+        print_info("Available slots", str(limit - used))
+
+    elif action == "status":
+        info = client.images.get_image(args.image_id)
+        if not info:
+            print_error(f"Image {args.image_id} not found.")
+            return
+        print_header(f"Image #{args.image_id}: {info.get('name', '')}")
+        print_info("Status", info.get("building_status", "unknown"))
+        print_info("Category", info.get("category", ""))
+        print_info("Base Image", info.get("basic_mirror_id", ""))
+        print_info("Build Method", info.get("build_config_method", ""))
+        if info.get("dockerfile_content"):
+            print(f"\n  \033[2mDockerfile:\033[0m")
+            for line in info["dockerfile_content"].split("\n"):
+                print(f"    {line}")
+
+    elif action == "delete":
+        if client.images.delete_image(args.image_id):
+            print_success(f"Image {args.image_id} deleted.")
+        else:
+            print_error(f"Failed to delete image {args.image_id}.")
+
+    elif action == "wait":
+        import time
+        print(f"[*] Waiting for image {args.image_id} to build (polling every {args.interval}s)...")
+        start = time.time()
+        while True:
+            info = client.images.get_image(args.image_id)
+            if not info:
+                print_error(f"Image {args.image_id} not found.")
+                return
+            status = info.get("building_status", "unknown")
+            elapsed = int(time.time() - start)
+            print(f"  [{elapsed}s] Status: {status}")
+            if status == "success":
+                print_success(f"Image {args.image_id} built successfully!")
+                return
+            elif status == "failed":
+                print_error(f"Image {args.image_id} build failed.")
+                return
+            time.sleep(args.interval)
+
+
 def cmd_compute(client: InkStoneClient, args: argparse.Namespace) -> None:
     action = args.compute_action
 
@@ -245,9 +320,14 @@ def cmd_compute(client: InkStoneClient, args: argparse.Namespace) -> None:
 
     elif action == "create":
         name = args.name or f"dev-{args.gpu}-{int(args.hours)}h"
-        print(f"[*] Creating {args.gpu.upper()} dev machine '{name}' for {args.hours} hours...")
+        custom_img = getattr(args, "image", None)
+        label = f"custom image #{custom_img}" if custom_img else args.gpu.upper()
+        print(f"[*] Creating {label} dev machine '{name}' for {args.hours} hours...")
         try:
-            res = client.compute.create_machine(name=name, flavor=args.gpu, hours=args.hours)
+            res = client.compute.create_machine(
+                name=name, flavor=args.gpu, hours=args.hours,
+                mirror_id=custom_img, custom_image=bool(custom_img),
+            )
             print_success(f"Dev machine created successfully! Machine ID: {res.get('id', 'pending')}")
         except Exception as e:
             print_error(f"Failed to create machine: {e}")
@@ -395,6 +475,21 @@ def main() -> None:
     k_del.add_argument("key_id", help="Key ID to delete")
     p_keys.set_defaults(func=cmd_keys)
 
+    # images
+    p_img = subparsers.add_parser("images", help="Manage custom container images")
+    img_sub = p_img.add_subparsers(dest="image_action")
+    img_sub.add_parser("list", help="List custom images")
+    img_sub.add_parser("bases", help="List official base images")
+    img_sub.add_parser("limit", help="Show max custom images allowed")
+    i_status = img_sub.add_parser("status", help="Check build status of an image")
+    i_status.add_argument("image_id", help="Image ID")
+    i_del = img_sub.add_parser("delete", help="Delete a custom image")
+    i_del.add_argument("image_id", help="Image ID")
+    i_wait = img_sub.add_parser("wait", help="Poll until image build completes")
+    i_wait.add_argument("image_id", help="Image ID")
+    i_wait.add_argument("--interval", type=int, default=15, help="Poll interval in seconds")
+    p_img.set_defaults(func=cmd_images)
+
     # compute
     p_comp = subparsers.add_parser("compute", help="Manage dev machines and GPU instances")
     comp_sub = p_comp.add_subparsers(dest="compute_action")
@@ -404,6 +499,7 @@ def main() -> None:
     c_create.add_argument("--gpu", choices=["a100", "910b", "cpu"], default="a100", help="Hardware flavor")
     c_create.add_argument("--hours", type=int, default=2, help="Runtime duration in hours")
     c_create.add_argument("--name", "-n", help="Machine name")
+    c_create.add_argument("--image", type=int, help="Custom image ID (uses custom mirror_source)")
     c_start = comp_sub.add_parser("start", help="Start stopped machine")
     c_start.add_argument("machine_id", help="Machine ID")
     c_start.add_argument("--hours", type=int, default=2, help="Runtime duration in hours")

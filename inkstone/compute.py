@@ -119,8 +119,15 @@ class ComputeManager:
         flavor: str = "a100",
         hours: int = 2,
         mirror_id: Optional[int] = None,
+        custom_image: bool = False,
     ) -> Dict[str, Any]:
-        """Create a new development machine."""
+        """Create a new development machine.
+
+        Args:
+            custom_image: If True, treat mirror_id as a custom image ID and
+                          set mirror_source to 'custom' so the platform uses
+                          a user-built container image instead of an official one.
+        """
         flavor_key = flavor.lower().replace("-", "")
         if flavor_key not in FLAVOR_CONFIG:
             raise ValueError(f"Unknown flavor '{flavor}'. Choose from: {list(FLAVOR_CONFIG.keys())}")
@@ -132,7 +139,7 @@ class ComputeManager:
         payload = {
             "name": name,
             "mirror_id": chosen_mirror_id,
-            "mirror_source": "official",
+            "mirror_source": "custom" if custom_image else "official",
             "resource_id": fcfg["resource_id"],
             "run_duration": duration_seconds,
             "dataset_selected": "",

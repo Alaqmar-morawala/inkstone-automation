@@ -9,12 +9,13 @@ from .auth import AuthManager
 from .compute import ComputeManager
 from .config import InkStoneConfig
 from .deploy import ModelDeployer
+from .images import ImageManager
 from .inference import InferenceClient
 from .tokenplan import TokenPlanManager
 
 
 class InkStoneClient:
-    """Consolidated client integrating TokenPlan, Model Inference, and Dev Machine Compute."""
+    """Consolidated client integrating TokenPlan, Model Inference, Dev Machine Compute, and Custom Images."""
 
     def __init__(self, config_path: Optional[str | Path] = None, account: Optional[str] = None):
         self.config_path = config_path
@@ -27,6 +28,7 @@ class InkStoneClient:
         self.tokenplan = TokenPlanManager(self.config, self.auth)
         self.inference = InferenceClient(self.config, self.auth)
         self.compute = ComputeManager(self.config, self.auth)
+        self.images = ImageManager(self.config, self.auth)
 
     def switch_account(self, account_name: str) -> None:
         """Switch active account profile."""
