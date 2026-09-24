@@ -170,7 +170,7 @@ class ComputeManager:
             "run_duration": hours * 3600,
         }
 
-        with httpx.Client(timeout=15.0) as client:
+        with httpx.Client(timeout=30.0) as client:
             resp = client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
@@ -184,7 +184,7 @@ class ComputeManager:
         pname = self._resolve_pod_name(machine_id, pod_name)
         payload = {"id": int(machine_id), "pod_name": pname}
 
-        with httpx.Client(timeout=15.0) as client:
+        with httpx.Client(timeout=30.0) as client:
             resp = client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
@@ -198,7 +198,7 @@ class ComputeManager:
         pname = self._resolve_pod_name(machine_id, pod_name)
         payload = {"id": int(machine_id), "pod_name": pname}
 
-        with httpx.Client(timeout=15.0) as client:
+        with httpx.Client(timeout=30.0) as client:
             resp = client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
@@ -216,7 +216,7 @@ class ComputeManager:
             "pod_name": resolved_pod_name or "",
         }
 
-        with httpx.Client(timeout=15.0) as client:
+        with httpx.Client(timeout=30.0) as client:
             resp = client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
