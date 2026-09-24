@@ -355,9 +355,59 @@ async def _prefixed(gen: AsyncIterator[bytes], first: bytes) -> AsyncIterator[by
         yield chunk
 
 
+# Fields the InkStone OpenAI endpoint is known to accept. Used as a fallback
+# sanitizer when the upstream rejects a request with 400 (harnesses like
+# ZCode send exotic fields - thinking/enable_thinking/reasoning/metadata/... -
+# some of which the upstream can refuse).
+_ALLOWED_CHAT_FIELDS = {
+    "model", "messages", "frequency_penalty", "logit_bias", "logprobs",
+    "top_logprobs", "max_tokens", "n", "presence_penalty", "response_format",
+    "seed", "stop", "stream", "stream_options", "temperature", "top_p",
+    "tools", "tool_choice", "user", "functions", "function_call",
+    "max_completion_tokens",
+}
+
+
+def sanitize_body(body: dict) -> dict:
+    clean = {k: v for k, v in body.items() if k in _ALLOWED_CHAT_FIELDS}
+    msgs = []
+    for m in clean.get("messages", []):
+        if not isinstance(m, dict):
+            continue
+        m = dict(m)
+        content = m.get("content")
+        # Flatten typed content parts to plain text (upstream is strict).
+        if isinstance(content, list):
+            parts = []
+            for part in content:
+                if isinstance(part, dict) and part.get("type") == "text":
+                    parts.append(part.get("text", ""))
+                elif isinstance(part, str):
+                    parts.append(part)
+            m["content"] = "\n".join(p for p in parts if p)
+        msgs.append(m)
+    clean["messages"] = msgs
+    return clean
+
+
 def build_app(pool: AccountPool, proxy_key: str = ""):
+    import os
     from fastapi import FastAPI, Request
     from fastapi.responses import JSONResponse, StreamingResponse
+
+    debug_dump = os.environ.get("INKSTONE_PROXY_DEBUG", "") == "1"
+
+    def _dump_request(body: dict, path: str) -> None:
+        if not debug_dump:
+            return
+        try:
+            with open("/tmp/inkstone_proxy_last_request.json", "w") as f:
+                json.dump({"path": path, "body": body, "ts": time.time()}, f, indent=2)
+        except Exception:
+            pass
+
+    def _log_upstream_error(path: str, status: int, body_text: str) -> None:
+        log.warning("upstream %s -> %d: %s", path, status, body_text[:500])
 
     app = FastAPI(title="inkstone-proxy", docs_url=None, redoc_url=None)
 
@@ -394,16 +444,34 @@ def build_app(pool: AccountPool, proxy_key: str = ""):
         if not _authorized(req):
             return _unauthorized()
         body = await req.json()
+        _dump_request(body, "/v1/chat/completions")
         stream = bool(body.get("stream"))
         try:
             acc_name, result = await route_request(pool, OPENAI_CHAT, body, stream)
         except UpstreamError as e:
-            return JSONResponse({"error": {"message": e.body, "type": "upstream_error"}},
-                                status_code=max(400, min(599, abs(e.status))))
+            if abs(e.status) == 400:
+                # Retry once with a sanitized body - harnesses send fields the
+                # upstream may refuse. Log the original rejection for diagnosis.
+                log.warning("chat 400 - retrying sanitized. original: %s", e.body[:300])
+                try:
+                    acc_name, result = await route_request(
+                        pool, OPENAI_CHAT, sanitize_body(body), stream)
+                    log.warning("chat sanitized retry SUCCEEDED (culprit field stripped)")
+                except UpstreamError as e2:
+                    _log_upstream_error("/v1/chat/completions", abs(e2.status), e2.body)
+                    return JSONResponse(
+                        {"error": {"message": e2.body, "type": "upstream_error"}},
+                        status_code=max(400, min(599, abs(e2.status))))
+            else:
+                _log_upstream_error("/v1/chat/completions", abs(e.status), e.body)
+                return JSONResponse({"error": {"message": e.body, "type": "upstream_error"}},
+                                    status_code=max(400, min(599, abs(e.status))))
         if stream:
             return StreamingResponse(result, media_type="text/event-stream",
                                      headers={"x-inkstone-account": acc_name})
         resp = result
+        if resp.status_code >= 400:
+            _log_upstream_error("/v1/chat/completions", resp.status_code, resp.text)
         try:
             data = resp.json()
             usage = data.get("usage") or {}
