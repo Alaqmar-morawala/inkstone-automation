@@ -1,12 +1,12 @@
 {
-  "active_account": "acc3",
+  "active_account": "acc1",
   "accounts": {
     "acc1": {
       "username": "Saifullah01-Projects",
       "ssouid": "471000843",
-      "uaa_token": "eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI0NzEwMDA4NDMiLCJyb2wiOiJST0xFX1JFR0lTVEVSIiwiaXNzIjoiT3BlblhMYWIiLCJpYXQiOjE3OTAxNzU2MzUsInBob25lIjpudWxsLCJlbWFpbCI6bnVsbCwiZXhwIjoxNzkxMzg1MjM1fQ.0sAmE0UYnamNcGJSFAw9qf7PHvEm-zK9nLPzNS-dRyUtOHwUwqnAk6o6mGUgt_3FyODDIbPBmXZd6ixywdo7Dg",
+      "uaa_token": "eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI0NzEwMDA4NDMiLCJyb2wiOiJST0xFX1JFR0lTVEVSIiwiaXNzIjoiT3BlblhMYWIiLCJpYXQiOjE3OTAxODYzMDUsInBob25lIjoiIiwiZW1haWwiOiIiLCJleHAiOjE3OTEzOTU5MDV9.HlNo0rXs5NqVmC_h41YGL6T7S1jhCVxx4Uij_BXdvSoBLuFrc1lUsECmDwcqArVw0X8CfgnUKpMj-_gQ-WbSPA",
       "api_key": "sk-f793c3a352fd4c2aa4b4e0e824e8aab1c6b7dc3d19998d5578b15617cd25e82b",
-      "acw_tc": "1803007917901755117892747e1e001a5dbcb2a21fe114afbca00b72eac9fe"
+      "acw_tc": "1805ab4917902487955074345e1f009d2582e7254a7132b0860f197dd254dd"
     },
     "acc2": {
       "username": "saif-pvt",
@@ -23,10 +23,10 @@
       "acw_tc": "1805ab4917901843989014291e1f006337acf562ac1013dc7ae4e186431278"
     }
   },
-  "uaa_token": "eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI2MjExMDAyODciLCJyb2wiOiJST0xFX1JFR0lTVEVSIiwiaXNzIjoiT3BlblhMYWIiLCJpYXQiOjE3OTAxODU0MjQsInBob25lIjpudWxsLCJlbWFpbCI6bnVsbCwiZXhwIjoxNzkxMzk1MDI0fQ.LNxKMVXNCihvSCIJXLOGjY44YtMU5kGXcCejMJSIIwZ6h0un80s3t5c1RvgOqxi4ZF9HPcVCIfrAKihyLsIJOw",
-  "ssouid": "621100287",
-  "api_key": "sk-bea3527364ea12aaabc0d6eacc9d3c3f5b9f6d481a5e113959b68ccba06bf16a",
-  "acw_tc": "1805ab4917901843989014291e1f006337acf562ac1013dc7ae4e186431278",
+  "uaa_token": "eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI0NzEwMDA4NDMiLCJyb2wiOiJST0xFX1JFR0lTVEVSIiwiaXNzIjoiT3BlblhMYWIiLCJpYXQiOjE3OTAxODYzMDUsInBob25lIjoiIiwiZW1haWwiOiIiLCJleHAiOjE3OTEzOTU5MDV9.HlNo0rXs5NqVmC_h41YGL6T7S1jhCVxx4Uij_BXdvSoBLuFrc1lUsECmDwcqArVw0X8CfgnUKpMj-_gQ-WbSPA",
+  "ssouid": "471000843",
+  "api_key": "sk-f793c3a352fd4c2aa4b4e0e824e8aab1c6b7dc3d19998d5578b15617cd25e82b",
+  "acw_tc": "1805ab4917902487955074345e1f009d2582e7254a7132b0860f197dd254dd",
   "discovery_url": "https://discovery.intern-ai.org.cn",
   "api_base_url": "https://discovery-api.intern-ai.org.cn/v1",
   "anthropic_base_url": "https://discovery-api.intern-ai.org.cn",
